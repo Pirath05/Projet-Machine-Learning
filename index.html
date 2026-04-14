@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HumanForYou — Prédiction Attrition</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0f;
+  --bg2: #0f0f18;
+  --bg3: #141420;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --accent: #6c63ff;
+  --accent2: #a78bfa;
+  --accent3: #38bdf8;
+  --text: #e8e8f0;
+  --muted: #6b6b80;
+  --danger: #FF4757;
+  --warn: #FF6B35;
+  --yellow: #FFA502;
+  --green: #2ED573;
+  --font-head: 'Syne', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-mono); font-size: 13px; min-height: 100vh; overflow-x: hidden; }
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 2px; }
+
+.app { display: flex; height: 100vh; overflow: hidden; }
+
+.sidebar {
+  width: 220px; min-width: 220px;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  padding: 24px 0;
+  position: relative;
+  z-index: 10;
+}
+.sidebar-logo {
+  padding: 0 20px 28px;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-logo .brand {
+  font-family: var(--font-head);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  color: var(--text);
+}
+.sidebar-logo .brand span { color: var(--accent2); }
+.sidebar-logo .tagline {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 3px;
+  letter-spacing: 0.5px;
+}
+.nav { padding: 16px 0; flex: 1; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 20px;
+  cursor: pointer;
+  color: var(--muted);
+  transition: all 0.15s;
+  font-size: 12px;
+  letter-spacing: 0.3px;
+  border-left: 2px solid transparent;
+}
+.nav-item:hover { color: var(--text); background: rgba(108,99,255,0.06); }
+.nav-item.active {
+  color: var(--accent2);
+  background: rgba(108,99,255,0.1);
+  border-left-color: var(--accent);
+}
+.nav-icon { width: 16px; text-align: center; font-size: 14px; }
+
+.model-status {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+}
+.model-badge {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 10px;
+  background: var(--bg3);
+  border-radius: 6px;
+  margin-bottom: 4px;
+  color: var(--muted);
+}
+.model-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+.model-badge.loaded .dot { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.model-badge.loaded { color: var(--text); }
+
+.main { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+
+.topbar {
+  height: 56px; min-height: 56px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 28px;
+  background: var(--bg);
+}
+.topbar-title {
+  font-family: var(--font-head);
+  font-size: 16px;
+  font-weight: 700;
+}
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px;
+  border-radius: 7px;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  transition: all 0.15s;
+}
+.btn-primary {
+  background: var(--accent);
+  color: white;
+}
+.btn-primary:hover { background: #7c74ff; transform: translateY(-1px); }
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--border2);
+  color: var(--muted);
+}
+.btn-ghost:hover { color: var(--text); border-color: var(--accent); }
+
+.content { flex: 1; overflow-y: auto; padding: 28px; }
+
+.view { display: none; }
+.view.active { display: block; }
+
+.upload-section {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: calc(100vh - 160px);
+}
+.upload-card {
+  background: var(--bg2);
+  border: 2px dashed var(--border2);
+  border-radius: 20px;
+  padding: 60px 80px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  max-width: 560px;
+  width: 100%;
+}
+.upload-card:hover, .upload-card.dragover {
+  border-color: var(--accent);
+  background: rgba(108,99,255,0.05);
+}
+.upload-icon { font-size: 48px; margin-bottom: 20px; }
+.upload-title {
+  font-family: var(--font-head);
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.upload-sub { color: var(--muted); font-size: 12px; line-height: 1.7; }
+.upload-sub span { color: var(--accent2); }
+.upload-input { display: none; }
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 28px;
+}
+.stat-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px 22px;
+  position: relative;
+  overflow: hidden;
+}
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+}
+.stat-card.total::before { background: var(--accent3); }
+.stat-card.risk::before { background: var(--yellow); }
+.stat-card.critical::before { background: var(--danger); }
+.stat-card.model::before { background: var(--green); }
+
+.stat-label { font-size: 11px; color: var(--muted); letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 8px; }
+.stat-value { font-family: var(--font-head); font-size: 32px; font-weight: 800; line-height: 1; }
+.stat-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.stat-card.total .stat-value { color: var(--accent3); }
+.stat-card.risk .stat-value { color: var(--yellow); }
+.stat-card.critical .stat-value { color: var(--danger); }
+.stat-card.model .stat-value { color: var(--green); font-size: 24px; }
+
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+
+.panel {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.panel-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.panel-title {
+  font-family: var(--font-head);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+.panel-body { padding: 20px; }
+
+.risk-bar { display: flex; gap: 2px; height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 12px; }
+.risk-bar-seg { height: 100%; transition: width 0.5s; }
+
+.emp-table-wrap { overflow-x: auto; }
+.emp-table { width: 100%; border-collapse: collapse; }
+.emp-table th {
+  text-align: left; padding: 10px 14px;
+  font-size: 10px; color: var(--muted); letter-spacing: 0.8px; text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+.emp-table th:hover { color: var(--text); }
+.emp-table td {
+  padding: 11px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  white-space: nowrap;
+}
+.emp-table tr:hover td { background: rgba(108,99,255,0.04); cursor: pointer; }
+
+.risk-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.prob-bar-wrap { display: flex; align-items: center; gap: 8px; min-width: 120px; }
+.prob-bar { flex: 1; height: 4px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; }
+.prob-bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s; }
+
+.table-controls {
+  display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap;
+}
+.search-input {
+  flex: 1; min-width: 180px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 14px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.search-input:focus { border-color: var(--accent); }
+.search-input::placeholder { color: var(--muted); }
+
+.filter-select {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  outline: none;
+  cursor: pointer;
+}
+.filter-select:focus { border-color: var(--accent); }
+
+.detail-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100;
+  display: none; align-items: center; justify-content: flex-end;
+  backdrop-filter: blur(4px);
+}
+.detail-overlay.open { display: flex; }
+.detail-panel {
+  width: 480px; height: 100vh;
+  background: var(--bg2);
+  border-left: 1px solid var(--border);
+  overflow-y: auto;
+  animation: slideIn 0.25s ease;
+}
+@keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+
+.detail-header {
+  padding: 24px;
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; background: var(--bg2); z-index: 5;
+}
+.detail-close {
+  float: right; background: none; border: none; color: var(--muted);
+  font-size: 18px; cursor: pointer; padding: 2px 6px;
+  transition: color 0.15s;
+}
+.detail-close:hover { color: var(--text); }
+.detail-emp-name {
+  font-family: var(--font-head);
+  font-size: 20px; font-weight: 800;
+  margin-bottom: 4px;
+}
+.detail-emp-sub { color: var(--muted); font-size: 12px; }
+
+.risk-score-big {
+  display: flex; align-items: center; gap: 16px;
+  background: var(--bg3);
+  border-radius: 12px; padding: 18px 20px;
+  margin: 16px 24px;
+}
+.risk-circle {
+  width: 70px; height: 70px;
+  border-radius: 50%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-family: var(--font-head);
+  font-weight: 800;
+  border: 3px solid;
+  flex-shrink: 0;
+}
+.risk-circle .pct { font-size: 20px; line-height: 1; }
+.risk-circle .lbl { font-size: 9px; color: var(--muted); }
+.risk-info-text .risk-title { font-family: var(--font-head); font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+.risk-info-text .risk-desc { font-size: 11px; color: var(--muted); line-height: 1.6; }
+
+.detail-section { padding: 20px 24px; }
+.detail-section-title {
+  font-size: 10px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.data-item {
+  background: var(--bg3);
+  border-radius: 8px; padding: 10px 12px;
+}
+.data-item-label { font-size: 10px; color: var(--muted); margin-bottom: 3px; }
+.data-item-value { font-size: 13px; font-weight: 500; }
+
+.rec-item {
+  display: flex; gap: 12px; align-items: flex-start;
+  background: var(--bg3);
+  border-radius: 10px; padding: 14px;
+  margin-bottom: 8px;
+  border-left: 3px solid;
+  transition: transform 0.15s;
+}
+.rec-item:hover { transform: translateX(2px); }
+.rec-item.high { border-left-color: var(--danger); }
+.rec-item.medium { border-left-color: var(--yellow); }
+.rec-item.low { border-left-color: var(--accent3); }
+.rec-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.rec-title { font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+.rec-text { font-size: 11px; color: var(--muted); line-height: 1.6; }
+
+.chart-canvas-wrap { position: relative; width: 100%; }
+canvas { display: block; }
+
+.dept-bar-item { margin-bottom: 14px; }
+.dept-bar-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 12px; }
+.dept-bar-track { height: 6px; background: rgba(255,255,255,0.07); border-radius: 3px; overflow: hidden; }
+.dept-bar-fill { height: 100%; border-radius: 3px; background: var(--accent); transition: width 0.5s; }
+
+.loading-overlay {
+  position: fixed; inset: 0;
+  background: rgba(10,10,15,0.9);
+  z-index: 200;
+  display: none; align-items: center; justify-content: center;
+  flex-direction: column; gap: 16px;
+  backdrop-filter: blur(6px);
+}
+.loading-overlay.show { display: flex; }
+.loading-spinner {
+  width: 40px; height: 40px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { font-family: var(--font-head); font-size: 14px; color: var(--accent2); }
+
+.charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.chart-full { grid-column: 1 / -1; }
+
+@media (max-width: 1100px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .grid2, .charts-grid { grid-template-columns: 1fr; }
+  .grid3 { grid-template-columns: 1fr; }
+}
+@media (max-width: 700px) {
+  .sidebar { display: none; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+}
+
+.pagination {
+  display: flex; gap: 6px; align-items: center; justify-content: center;
+  margin-top: 16px;
+}
+.page-btn {
+  width: 30px; height: 30px; border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg3); color: var(--muted);
+  cursor: pointer; font-family: var(--font-mono); font-size: 12px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.page-btn:hover, .page-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+.tooltip {
+  position: absolute; background: var(--bg3); border: 1px solid var(--border2);
+  border-radius: 6px; padding: 6px 10px; font-size: 11px; color: var(--text);
+  pointer-events: none; z-index: 999; white-space: nowrap;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+}
+
+.empty-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 60px 20px; color: var(--muted); text-align: center;
+}
+.empty-state .empty-icon { font-size: 36px; margin-bottom: 12px; opacity: 0.4; }
+.empty-state p { font-size: 12px; line-height: 1.7; }
+
+.notif {
+  position: fixed; bottom: 24px; right: 24px; z-index: 300;
+  background: var(--bg3); border: 1px solid var(--border2);
+  border-radius: 10px; padding: 14px 18px;
+  font-size: 12px; max-width: 320px;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.5);
+  animation: slideUp 0.3s ease;
+  display: none;
+}
+.notif.show { display: block; }
+.notif.error { border-left: 3px solid var(--danger); }
+.notif.success { border-left: 3px solid var(--green); }
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">Analyse en cours…</div>
+</div>
+
+<div class="notif" id="notif"></div>
+
+<div class="detail-overlay" id="detailOverlay" onclick="if(event.target===this)closeDetail()">
+  <div class="detail-panel" id="detailPanel">
+    <div class="detail-header">
+      <button class="detail-close" onclick="closeDetail()">✕</button>
+      <div class="detail-emp-name" id="detailName">—</div>
+      <div class="detail-emp-sub" id="detailSub">—</div>
+    </div>
+    <div id="detailContent"></div>
+  </div>
+</div>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="brand">Human<span>ForYou</span></div>
+      <div class="tagline">AI Attrition Intelligence</div>
+    </div>
+    <nav class="nav">
+      <div class="nav-item active" onclick="switchView('upload')">
+        <span class="nav-icon">⬆</span> Importer CSV
+      </div>
+      <div class="nav-item" onclick="switchView('dashboard')" id="nav-dashboard">
+        <span class="nav-icon">◉</span> Dashboard
+      </div>
+      <div class="nav-item" onclick="switchView('employees')" id="nav-employees">
+        <span class="nav-icon">⊞</span> Employés
+      </div>
+      <div class="nav-item" onclick="switchView('charts')" id="nav-charts">
+        <span class="nav-icon">↗</span> Graphiques
+      </div>
+    </nav>
+    <div class="model-status">
+      <div style="font-size:10px;color:var(--muted);letter-spacing:0.5px;margin-bottom:8px;text-transform:uppercase;">Modèles</div>
+      <div class="model-badge" id="badge-rf"><div class="dot"></div>Random Forest</div>
+      <div class="model-badge" id="badge-xgb"><div class="dot"></div>XGBoost</div>
+      <div class="model-badge" id="badge-lr"><div class="dot"></div>Logistic Reg.</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="topbarTitle">Importer un fichier CSV</div>
+      <div class="topbar-right">
+        <span id="topbarSub" style="font-size:11px;color:var(--muted);"></span>
+        <button class="btn btn-ghost" onclick="document.getElementById('fileInput').click()" id="btnNewFile" style="display:none">
+          ⬆ Nouveau fichier
+        </button>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="view active" id="view-upload">
+        <div class="upload-section">
+          <div class="upload-card" id="dropZone"
+               onclick="document.getElementById('fileInput').click()"
+               ondragover="handleDragOver(event)"
+               ondragleave="handleDragLeave(event)"
+               ondrop="handleDrop(event)">
+            <div class="upload-icon">📊</div>
+            <div class="upload-title">Déposer votre fichier CSV</div>
+            <div class="upload-sub" style="margin-top:10px;">
+              Glissez-déposez ou cliquez pour sélectionner<br>
+              Format attendu : colonnes RH HumanForYou<br>
+              <span>Age, Department, MonthlyIncome, JobSatisfaction…</span>
+            </div>
+          </div>
+          <input type="file" id="fileInput" class="upload-input" accept=".csv" onchange="handleFile(event)">
+          <div style="margin-top:24px;font-size:11px;color:var(--muted);text-align:center;max-width:400px;line-height:1.8;">
+            Les prédictions utilisent votre modèle <strong style="color:var(--accent2)">Random Forest</strong> entraîné
+            sur les données HumanForYou.<br>
+            Les fichiers ne quittent pas votre machine.
+          </div>
+        </div>
+      </div>
+
+      <div class="view" id="view-dashboard">
+        <div class="stats-grid">
+          <div class="stat-card total">
+            <div class="stat-label">Total employés</div>
+            <div class="stat-value" id="statTotal">—</div>
+            <div class="stat-sub" id="statTotalSub">—</div>
+          </div>
+          <div class="stat-card risk">
+            <div class="stat-label">À risque (≥ 50%)</div>
+            <div class="stat-value" id="statRisk">—</div>
+            <div class="stat-sub" id="statRiskSub">—</div>
+          </div>
+          <div class="stat-card critical">
+            <div class="stat-label">Critique (≥ 70%)</div>
+            <div class="stat-value" id="statCritical">—</div>
+            <div class="stat-sub" id="statCriticalSub">—</div>
+          </div>
+          <div class="stat-card model">
+            <div class="stat-label">Probabilité moy.</div>
+            <div class="stat-value" id="statAvg">—</div>
+            <div class="stat-sub" id="statAvgSub">—</div>
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">Distribution du risque</div>
+              <div style="font-size:11px;color:var(--muted)">par seuil</div>
+            </div>
+            <div class="panel-body">
+              <div class="risk-bar" id="riskBar">
+                <div class="risk-bar-seg" style="background:var(--green);width:70%"></div>
+                <div class="risk-bar-seg" style="background:var(--yellow);width:15%"></div>
+                <div class="risk-bar-seg" style="background:var(--warn);width:10%"></div>
+                <div class="risk-bar-seg" style="background:var(--danger);width:5%"></div>
+              </div>
+              <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;">
+                <div style="display:flex;align-items:center;gap:6px;font-size:11px;">
+                  <div style="width:10px;height:10px;border-radius:2px;background:var(--green)"></div>
+                  <span>Faible &lt;30%</span>
+                  <strong id="distLow">—</strong>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;font-size:11px;">
+                  <div style="width:10px;height:10px;border-radius:2px;background:var(--yellow)"></div>
+                  <span>Modéré 30-50%</span>
+                  <strong id="distMed">—</strong>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;font-size:11px;">
+                  <div style="width:10px;height:10px;border-radius:2px;background:var(--warn)"></div>
+                  <span>Élevé 50-70%</span>
+                  <strong id="distHigh">—</strong>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;font-size:11px;">
+                  <div style="width:10px;height:10px;border-radius:2px;background:var(--danger)"></div>
+                  <span>Critique ≥70%</span>
+                  <strong id="distCrit">—</strong>
+                </div>
+              </div>
+              <div style="margin-top:20px;">
+                <canvas id="probDistChart" height="120"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">Attrition par département</div>
+            </div>
+            <div class="panel-body" id="deptBars">
+              <div class="empty-state"><div class="empty-icon">🏢</div><p>Aucune donnée Department</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Top 10 — Employés les plus à risque</div>
+            <button class="btn btn-ghost" onclick="switchView('employees')" style="font-size:11px;padding:4px 10px;">Voir tous →</button>
+          </div>
+          <div class="panel-body">
+            <div class="emp-table-wrap">
+              <table class="emp-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Département</th>
+                    <th>Poste</th>
+                    <th>Risque</th>
+                    <th>Probabilité</th>
+                    <th>Salaire</th>
+                    <th>Ancienneté</th>
+                  </tr>
+                </thead>
+                <tbody id="top10Body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="view" id="view-employees">
+        <div class="table-controls">
+          <input type="text" class="search-input" placeholder="🔍  Rechercher employé, département, poste…" id="searchInput" oninput="filterTable()">
+          <select class="filter-select" id="filterRisk" onchange="filterTable()">
+            <option value="">Tous les risques</option>
+            <option value="Critique">Critique</option>
+            <option value="Élevé">Élevé</option>
+            <option value="Modéré">Modéré</option>
+            <option value="Faible">Faible</option>
+          </select>
+          <select class="filter-select" id="filterDept" onchange="filterTable()">
+            <option value="">Tous les départements</option>
+          </select>
+          <span id="filteredCount" style="font-size:11px;color:var(--muted);white-space:nowrap;"></span>
+        </div>
+        <div class="panel">
+          <div class="emp-table-wrap">
+            <table class="emp-table">
+              <thead>
+                <tr>
+                  <th onclick="sortTable('id')">ID ↕</th>
+                  <th onclick="sortTable('dept')">Département ↕</th>
+                  <th onclick="sortTable('role')">Poste ↕</th>
+                  <th onclick="sortTable('risk')">Risque ↕</th>
+                  <th onclick="sortTable('prob')">Probabilité ↕</th>
+                  <th>Salaire</th>
+                  <th>Ancienneté</th>
+                  <th>Satisfaction</th>
+                  <th>Reco.</th>
+                </tr>
+              </thead>
+              <tbody id="empTableBody"></tbody>
+            </table>
+          </div>
+          <div class="pagination" id="pagination"></div>
+        </div>
+      </div>
+
+      <div class="view" id="view-charts">
+        <div class="charts-grid">
+          <div class="panel chart-full">
+            <div class="panel-header"><div class="panel-title">Distribution des probabilités d'attrition</div></div>
+            <div class="panel-body"><canvas id="histChart" height="120"></canvas></div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title">Attrition par département</div></div>
+            <div class="panel-body"><canvas id="deptChart" height="200"></canvas></div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title">Répartition des niveaux de risque</div></div>
+            <div class="panel-body"><canvas id="donutChart" height="200"></canvas></div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title">Salaire moyen vs. niveau de risque</div></div>
+            <div class="panel-body"><canvas id="salaryChart" height="200"></canvas></div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title">Ancienneté vs. niveau de risque</div></div>
+            <div class="panel-body"><canvas id="tenureChart" height="200"></canvas></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+let appData = null;
+let filteredResults = [];
+let currentPage = 1;
+const PAGE_SIZE = 20;
+let sortKey = 'prob';
+let sortDir = -1;
+let charts = {};
+
+async function checkModels() {
+  try {
+    const r = await fetch('/api/models_status');
+    const d = await r.json();
+    if (d.loaded) {
+      d.models.forEach(m => {
+        const el = document.getElementById('badge-' + m);
+        if (el) el.classList.add('loaded');
+      });
+    }
+  } catch(e) {}
+}
+checkModels();
+
+Chart.defaults.color = '#6b6b80';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+Chart.defaults.font.family = "'DM Mono', monospace";
+Chart.defaults.font.size = 11;
+
+function handleDragOver(e) {
+  e.preventDefault();
+  document.getElementById('dropZone').classList.add('dragover');
+}
+function handleDragLeave(e) {
+  document.getElementById('dropZone').classList.remove('dragover');
+}
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('dropZone').classList.remove('dragover');
+  const f = e.dataTransfer.files[0];
+  if (f) uploadFile(f);
+}
+function handleFile(e) {
+  const f = e.target.files[0];
+  if (f) uploadFile(f);
+}
+
+async function uploadFile(file) {
+  if (!file.name.endsWith('.csv')) {
+    showNotif('Format CSV requis (.csv)', 'error');
+    return;
+  }
+  showLoading(true);
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    const r = await fetch('/api/upload', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (!r.ok) { showNotif(d.error || 'Erreur serveur', 'error'); return; }
+    appData = d;
+    initApp(file.name);
+    showNotif(`✓ ${d.total} employés analysés`, 'success');
+  } catch(e) {
+    showNotif('Erreur de connexion au serveur', 'error');
+    console.error(e);
+  } finally {
+    showLoading(false);
+  }
+}
+
+function initApp(filename) {
+  document.getElementById('btnNewFile').style.display = 'flex';
+  document.getElementById('topbarSub').textContent = filename;
+  
+  const depts = [...new Set(appData.results.map(r => r.data['Department']).filter(Boolean))].sort();
+  const sel = document.getElementById('filterDept');
+  sel.innerHTML = '<option value="">Tous les départements</option>';
+  depts.forEach(d => sel.innerHTML += `<option value="${d}">${d}</option>`);
+
+  fillDashboard();
+  filteredResults = [...appData.results].sort((a,b) => b.prob - a.prob);
+  renderTable();
+  switchView('dashboard');
+}
+
+function fillDashboard() {
+  const d = appData;
+  document.getElementById('statTotal').textContent = d.total;
+  document.getElementById('statTotalSub').textContent = 'employés dans le fichier';
+  document.getElementById('statRisk').textContent = d.at_risk;
+  document.getElementById('statRiskSub').textContent = `${(d.at_risk/d.total*100).toFixed(1)}% de l'effectif`;
+  document.getElementById('statCritical').textContent = d.critical;
+  document.getElementById('statCriticalSub').textContent = 'départs très probables';
+  document.getElementById('statAvg').textContent = d.avg_prob + '%';
+  document.getElementById('statAvgSub').textContent = d.accuracy ? `Précision modèle : ${d.accuracy}%` : 'probabilité moyenne';
+
+  const rs = d.results;
+  const low  = rs.filter(r => r.prob < 30).length;
+  const med  = rs.filter(r => r.prob >= 30 && r.prob < 50).length;
+  const high = rs.filter(r => r.prob >= 50 && r.prob < 70).length;
+  const crit = rs.filter(r => r.prob >= 70).length;
+  const n = d.total;
+  document.getElementById('distLow').textContent  = low;
+  document.getElementById('distMed').textContent  = med;
+  document.getElementById('distHigh').textContent = high;
+  document.getElementById('distCrit').textContent = crit;
+
+  const rb = document.getElementById('riskBar');
+  rb.innerHTML = `
+    <div class="risk-bar-seg" style="background:var(--green);width:${low/n*100}%"></div>
+    <div class="risk-bar-seg" style="background:var(--yellow);width:${med/n*100}%"></div>
+    <div class="risk-bar-seg" style="background:var(--warn);width:${high/n*100}%"></div>
+    <div class="risk-bar-seg" style="background:var(--danger);width:${crit/n*100}%"></div>
+  `;
+
+  const db = document.getElementById('deptBars');
+  if (Object.keys(d.dept_stats).length > 0) {
+    db.innerHTML = '';
+    Object.entries(d.dept_stats).forEach(([dept, s]) => {
+      const pct = s.total > 0 ? (s.at_risk/s.total*100).toFixed(1) : 0;
+      db.innerHTML += `
+        <div class="dept-bar-item">
+          <div class="dept-bar-row">
+            <span>${dept}</span>
+            <span style="color:var(--accent2)">${pct}% <span style="color:var(--muted)">(${s.at_risk}/${s.total})</span></span>
+          </div>
+          <div class="dept-bar-track"><div class="dept-bar-fill" style="width:${pct}%"></div></div>
+        </div>`;
+    });
+  }
+
+  drawProbDist();
+
+  const top10 = [...rs].sort((a,b) => b.prob - a.prob).slice(0, 10);
+  const tbody = document.getElementById('top10Body');
+  tbody.innerHTML = top10.map(r => empRow(r, true)).join('');
+}
+
+function drawProbDist() {
+  const ctx = document.getElementById('probDistChart').getContext('2d');
+  if (charts.probDist) charts.probDist.destroy();
+  
+  const bins = Array(10).fill(0);
+  appData.results.forEach(r => {
+    const b = Math.min(Math.floor(r.prob / 10), 9);
+    bins[b]++;
+  });
+  const labels = ['0-10','10-20','20-30','30-40','40-50','50-60','60-70','70-80','80-90','90-100'];
+  const colors = bins.map((_, i) => {
+    if (i < 3) return '#2ED573';
+    if (i < 5) return '#FFA502';
+    if (i < 7) return '#FF6B35';
+    return '#FF4757';
+  });
+
+  charts.probDist = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets: [{ data: bins, backgroundColor: colors, borderRadius: 4, borderSkipped: false }] },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' } }
+      }
+    }
+  });
+}
+
+function empRow(r, compact=false) {
+  const probColor = r.prob >= 70 ? 'var(--danger)' : r.prob >= 50 ? 'var(--warn)' : r.prob >= 30 ? 'var(--yellow)' : 'var(--green)';
+  const dept = r.data['Department'] || '—';
+  const role = r.data['JobRole'] || '—';
+  const income = r.data['MonthlyIncome'] ? `₹${Number(r.data['MonthlyIncome']).toLocaleString()}` : '—';
+  const years = r.data['YearsAtCompany'] != null ? r.data['YearsAtCompany'] + ' ans' : '—';
+  const sat = r.data['JobSatisfaction'] != null ? '★'.repeat(Math.round(r.data['JobSatisfaction'])) : '—';
+  const nRecs = r.recs.length;
+  
+  const baseRow = `
+    <tr onclick="openDetail(${r.index})">
+      <td><span style="color:var(--accent2);font-weight:500">#${r.id}</span></td>
+      <td>${dept}</td>
+      <td style="color:var(--muted)">${role}</td>
+      <td><span class="risk-pill" style="background:${r.risk_color}22;color:${r.risk_color}">
+        <span style="width:6px;height:6px;border-radius:50%;background:${r.risk_color};display:inline-block"></span>
+        ${r.risk_label}
+      </span></td>
+      <td>
+        <div class="prob-bar-wrap">
+          <div class="prob-bar"><div class="prob-bar-fill" style="width:${r.prob}%;background:${probColor}"></div></div>
+          <span style="color:${probColor};font-weight:500;min-width:36px">${r.prob}%</span>
+        </div>
+      </td>
+      <td>${income}</td>
+      <td>${years}</td>`;
+  
+  if (compact) return baseRow + `</tr>`;
+  return baseRow + `<td style="color:var(--accent3)">${sat}</td>
+      <td>${nRecs > 0 ? `<span style="color:var(--yellow)">${nRecs} action${nRecs>1?'s':''}</span>` : '<span style="color:var(--muted)">—</span>'}</td>
+    </tr>`;
+}
+
+function filterTable() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const riskF = document.getElementById('filterRisk').value;
+  const deptF = document.getElementById('filterDept').value;
+  
+  filteredResults = appData.results.filter(r => {
+    const dept = (r.data['Department'] || '').toLowerCase();
+    const role = (r.data['JobRole'] || '').toLowerCase();
+    const id = r.id.toLowerCase();
+    const matchQ = !q || dept.includes(q) || role.includes(q) || id.includes(q);
+    const matchRisk = !riskF || r.risk_label === riskF;
+    const matchDept = !deptF || r.data['Department'] === deptF;
+    return matchQ && matchRisk && matchDept;
+  });
+  
+  filteredResults.sort((a,b) => {
+    let va, vb;
+    switch(sortKey) {
+      case 'prob': va = a.prob; vb = b.prob; break;
+      case 'id': va = a.id; vb = b.id; break;
+      case 'dept': va = a.data['Department']||''; vb = b.data['Department']||''; break;
+      case 'role': va = a.data['JobRole']||''; vb = b.data['JobRole']||''; break;
+      case 'risk': va = a.prob; vb = b.prob; break;
+      default: va = a.prob; vb = b.prob;
+    }
+    return typeof va === 'number' ? (va - vb) * sortDir : va.localeCompare(vb) * sortDir;
+  });
+  
+  document.getElementById('filteredCount').textContent = `${filteredResults.length} résultats`;
+  currentPage = 1;
+  renderTable();
+}
+
+function sortTable(key) {
+  if (sortKey === key) sortDir *= -1;
+  else { sortKey = key; sortDir = -1; }
+  filterTable();
+}
+
+function renderTable() {
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const page = filteredResults.slice(start, start + PAGE_SIZE);
+  const tbody = document.getElementById('empTableBody');
+  tbody.innerHTML = page.length ? page.map(r => empRow(r)).join('') 
+    : `<tr><td colspan="9"><div class="empty-state"><div class="empty-icon">🔍</div><p>Aucun résultat</p></div></td></tr>`;
+  
+  const pages = Math.ceil(filteredResults.length / PAGE_SIZE);
+  const pag = document.getElementById('pagination');
+  pag.innerHTML = '';
+  if (pages > 1) {
+    for (let i = 1; i <= Math.min(pages, 10); i++) {
+      pag.innerHTML += `<button class="page-btn ${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</button>`;
+    }
+    if (pages > 10) pag.innerHTML += `<span style="color:var(--muted);font-size:11px;padding:0 6px">…${pages} pages</span>`;
+  }
+}
+
+function goPage(p) {
+  currentPage = p;
+  renderTable();
+}
+
+function openDetail(idx) {
+  const r = appData.results[idx];
+  const data = r.data;
+  
+  document.getElementById('detailName').textContent = 
+    `Employé #${r.id}` + (data['JobRole'] ? ` — ${data['JobRole']}` : '');
+  document.getElementById('detailSub').textContent = 
+    [data['Department'], data['MaritalStatus'] ? `${data['MaritalStatus']}` : '', data['Age'] ? `${data['Age']} ans` : '']
+    .filter(Boolean).join(' · ');
+  
+  const probColor = r.risk_color;
+  
+  const keyFields = [
+    ['Age', data['Age'], 'ans'],
+    ['Département', data['Department'], ''],
+    ['Poste', data['JobRole'], ''],
+    ['Niveau', data['JobLevel'], ''],
+    ['Salaire mensuel', data['MonthlyIncome'] ? `₹${Number(data['MonthlyIncome']).toLocaleString()}` : null, ''],
+    ['Ancienneté', data['YearsAtCompany'], 'ans'],
+    ['Dernière promotion', data['YearsSinceLastPromotion'], 'ans'],
+    ['Satisfaction travail', data['JobSatisfaction'], '/4'],
+    ['Équilibre vie pro/perso', data['WorkLifeBalance'], '/4'],
+    ['Satisfaction env.', data['EnvironmentSatisfaction'], '/4'],
+    ['Implication', data['JobInvolvement'], '/4'],
+    ['Déplacements', data['BusinessTravel'], ''],
+    ['Heures sup.', data['OverTime'], ''],
+    ['Nb. entreprises', data['NumCompaniesWorked'], ''],
+    ['Formation (dernier an)', data['TrainingTimesLastYear'], 'sessions'],
+    ['Options d\'actions', data['StockOptionLevel'], '/3'],
+    ['Éducation', data['Education'], ''],
+    ['Domaine d\'études', data['EducationField'], ''],
+    ['Performance', data['PerformanceRating'], '/4'],
+    ['Années avec manager', data['YearsWithCurrManager'], 'ans'],
+  ].filter(([, v]) => v !== null && v !== undefined && v !== '');
+
+  const riskDesc = r.prob >= 70 ? 'Risque de départ très élevé. Intervention prioritaire recommandée.'
+    : r.prob >= 50 ? 'Risque significatif. Un entretien de rétention est conseillé.'
+    : r.prob >= 30 ? 'Risque modéré. À surveiller lors du prochain entretien annuel.'
+    : 'Employé stable. Maintenir l\'engagement habituel.';
+
+  let html = `
+    <div class="risk-score-big">
+      <div class="risk-circle" style="color:${probColor};border-color:${probColor};background:${probColor}18">
+        <div class="pct">${r.prob}%</div>
+        <div class="lbl">risque</div>
+      </div>
+      <div class="risk-info-text">
+        <div class="risk-title" style="color:${probColor}">${r.risk_label}</div>
+        <div class="risk-desc">${riskDesc}</div>
+      </div>
+    </div>`;
+  
+  if (r.actual !== null) {
+    const actualLabel = r.actual === 1 ? 'Oui (départ confirmé)' : 'Non (toujours présent)';
+    const actualColor = r.actual === 1 ? 'var(--danger)' : 'var(--green)';
+    html += `<div style="padding:0 24px 4px;font-size:11px;">
+      Attrition réelle : <strong style="color:${actualColor}">${actualLabel}</strong>
+      ${r.pred === r.actual ? ' ✓ Prédiction correcte' : ' ✗ Prédiction incorrecte'}
+    </div>`;
+  }
+  
+  html += `<div class="detail-section">
+    <div class="detail-section-title">Données employé</div>
+    <div class="data-grid">
+      ${keyFields.map(([label, value, unit]) => `
+        <div class="data-item">
+          <div class="data-item-label">${label}</div>
+          <div class="data-item-value">${value}${unit ? ' ' + unit : ''}</div>
+        </div>`).join('')}
+    </div>
+  </div>`;
+
+  if (r.recs.length > 0) {
+    html += `<div class="detail-section">
+      <div class="detail-section-title">Recommandations RH (${r.recs.length})</div>
+      ${r.recs.map(rec => `
+        <div class="rec-item ${rec.priority}">
+          <div class="rec-icon">${rec.icon}</div>
+          <div>
+            <div class="rec-title">${rec.title}</div>
+            <div class="rec-text">${rec.text}</div>
+          </div>
+        </div>`).join('')}
+    </div>`;
+  } else {
+    html += `<div class="detail-section">
+      <div class="empty-state" style="padding:20px">
+        <div class="empty-icon">✓</div>
+        <p style="color:var(--green)">Aucune alerte détectée.<br>Profil stable.</p>
+      </div>
+    </div>`;
+  }
+
+  document.getElementById('detailContent').innerHTML = html;
+  document.getElementById('detailOverlay').classList.add('open');
+}
+
+function closeDetail() {
+  document.getElementById('detailOverlay').classList.remove('open');
+}
+
+function drawCharts() {
+  const rs = appData.results;
+  
+  const hCtx = document.getElementById('histChart').getContext('2d');
+  if (charts.hist) charts.hist.destroy();
+  const bins = Array(20).fill(0);
+  rs.forEach(r => { bins[Math.min(Math.floor(r.prob/5), 19)]++; });
+  charts.hist = new Chart(hCtx, {
+    type: 'bar',
+    data: { 
+      labels: Array.from({length:20},(_,i)=>`${i*5}-${i*5+5}%`),
+      datasets: [{ 
+        data: bins,
+        backgroundColor: bins.map((_,i) => i < 6 ? '#2ED573' : i < 10 ? '#FFA502' : i < 14 ? '#FF6B35' : '#FF4757'),
+        borderRadius: 3, borderSkipped: false
+      }]
+    },
+    options: { plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { grid: { color: 'rgba(255,255,255,0.04)' } } } }
+  });
+
+  const deptCtx = document.getElementById('deptChart').getContext('2d');
+  if (charts.dept) charts.dept.destroy();
+  if (appData.dept_stats && Object.keys(appData.dept_stats).length > 0) {
+    const depts = Object.keys(appData.dept_stats);
+    const pcts = depts.map(d => appData.dept_stats[d].total > 0 
+      ? (appData.dept_stats[d].at_risk / appData.dept_stats[d].total * 100).toFixed(1) : 0);
+    charts.dept = new Chart(deptCtx, {
+      type: 'bar',
+      data: { labels: depts, datasets: [{ label: '% à risque', data: pcts, backgroundColor: '#6c63ff88', borderColor: '#6c63ff', borderWidth: 1, borderRadius: 4 }] },
+      options: { plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { max: 100, grid: { color: 'rgba(255,255,255,0.04)' } } } }
+    });
+  }
+
+  const doCtx = document.getElementById('donutChart').getContext('2d');
+  if (charts.donut) charts.donut.destroy();
+  const low = rs.filter(r => r.prob < 30).length;
+  const med = rs.filter(r => r.prob >= 30 && r.prob < 50).length;
+  const high = rs.filter(r => r.prob >= 50 && r.prob < 70).length;
+  const crit = rs.filter(r => r.prob >= 70).length;
+  charts.donut = new Chart(doCtx, {
+    type: 'doughnut',
+    data: { labels: ['Faible', 'Modéré', 'Élevé', 'Critique'], datasets: [{ data: [low,med,high,crit], backgroundColor: ['#2ED573','#FFA502','#FF6B35','#FF4757'], borderWidth: 0, hoverOffset: 4 }] },
+    options: { plugins: { legend: { position: 'bottom' } }, cutout: '65%' }
+  });
+
+  const salCtx = document.getElementById('salaryChart').getContext('2d');
+  if (charts.salary) charts.salary.destroy();
+  const riskGroups = { 'Faible': [], 'Modéré': [], 'Élevé': [], 'Critique': [] };
+  rs.forEach(r => { if (r.data['MonthlyIncome'] && riskGroups[r.risk_label]) riskGroups[r.risk_label].push(Number(r.data['MonthlyIncome'])); });
+  const avgSalary = Object.entries(riskGroups).map(([, arr]) => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(0) : 0);
+  charts.salary = new Chart(salCtx, {
+    type: 'bar',
+    data: { labels: Object.keys(riskGroups), datasets: [{ label: 'Salaire moyen (₹)', data: avgSalary, backgroundColor: ['#2ED573','#FFA502','#FF6B35','#FF4757'], borderRadius: 4, borderSkipped: false }] },
+    options: { plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { grid: { color: 'rgba(255,255,255,0.04)' } } } }
+  });
+
+  const tenCtx = document.getElementById('tenureChart').getContext('2d');
+  if (charts.tenure) charts.tenure.destroy();
+  const tenureGroups = { 'Faible': [], 'Modéré': [], 'Élevé': [], 'Critique': [] };
+  rs.forEach(r => { if (r.data['YearsAtCompany'] != null && tenureGroups[r.risk_label]) tenureGroups[r.risk_label].push(Number(r.data['YearsAtCompany'])); });
+  const avgTenure = Object.entries(tenureGroups).map(([, arr]) => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1) : 0);
+  charts.tenure = new Chart(tenCtx, {
+    type: 'bar',
+    data: { labels: Object.keys(tenureGroups), datasets: [{ label: 'Ancienneté moy. (ans)', data: avgTenure, backgroundColor: ['#2ED573cc','#FFA502cc','#FF6B35cc','#FF4757cc'], borderRadius: 4, borderSkipped: false }] },
+    options: { plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { grid: { color: 'rgba(255,255,255,0.04)' } } } }
+  });
+}
+
+function switchView(v) {
+  if ((v !== 'upload') && !appData) {
+    showNotif('Importez d\'abord un fichier CSV', 'error'); return;
+  }
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.getElementById('view-' + v).classList.add('active');
+  
+  const navTitles = { upload: 'Importer un fichier CSV', dashboard: 'Dashboard', employees: 'Liste des employés', charts: 'Graphiques & Analyses' };
+  document.getElementById('topbarTitle').textContent = navTitles[v] || v;
+  
+  const navEl = document.querySelector(`.nav-item[onclick*="${v}"]`);
+  if (navEl) navEl.classList.add('active');
+  
+  if (v === 'employees' && appData) {
+    filteredResults = [...appData.results].sort((a,b) => b.prob - a.prob);
+    renderTable();
+    document.getElementById('filteredCount').textContent = `${filteredResults.length} résultats`;
+  }
+  if (v === 'charts' && appData) {
+    setTimeout(drawCharts, 50);
+  }
+}
+
+function showLoading(s) { document.getElementById('loadingOverlay').classList.toggle('show', s); }
+
+function showNotif(msg, type='success') {
+  const el = document.getElementById('notif');
+  el.textContent = msg;
+  el.className = `notif show ${type}`;
+  setTimeout(() => el.classList.remove('show'), 3500);
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDetail(); });
+</script>
+</body>
+</html>
