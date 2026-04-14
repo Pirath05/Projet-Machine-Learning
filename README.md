@@ -26,7 +26,15 @@ hr_attrition_app/
 
 ## Étape 1 — Copier les modèles
 
-Copiez les fichiers `.pkl`
+Après avoir exécuté votre notebook, copiez les fichiers `.pkl` dans le dossier `models/` :
+
+```bash
+cp model_rf_final.pkl  hr_attrition_app/models/
+cp model_xgb_final.pkl hr_attrition_app/models/
+cp model_lr_final.pkl  hr_attrition_app/models/
+cp scaler_lr.pkl       hr_attrition_app/models/
+cp feature_names.pkl   hr_attrition_app/models/
+```
 
 ## Étape 2 — Lancer l'application
 
@@ -55,7 +63,7 @@ La colonne `Attrition` est optionnelle — si présente, la précision du modèl
 
 ---
 
-## Notebook — HumanForYou.ipynb
+## Notebook — HumanForYou_ultimateSpiderMan_v3.ipynb
 
 Le notebook couvre l'intégralité du pipeline ML ayant produit les modèles utilisés par l'application.
 
@@ -81,7 +89,7 @@ manager_survey_data.csv
 employee_survey_data.csv
 in_out_time/
     in_time.csv
-    out_time.csv      
+    out_time.csv        ← optionnel (features horaires)
 ```
 
 ### Modèles produits
@@ -89,7 +97,7 @@ in_out_time/
 À la fin de l'exécution, le notebook exporte :
 
 ```
-model_rf_final.pkl      ← Random Forest 
+model_rf_final.pkl      ← Random Forest (modèle retenu)
 model_xgb_final.pkl
 model_lr_final.pkl
 scaler_lr.pkl           ← StandardScaler ajusté sur le train
@@ -110,4 +118,78 @@ Ces fichiers sont directement utilisables par `hr_attrition_app/`.
 
 ```bash
 pip install pandas numpy matplotlib seaborn scikit-learn xgboost shap joblib
+```
+
+---
+
+## Modèle PyTorch — nn_pytorch.py + nn_data.py
+
+Implémentation d'un réseau de neurones pour la prédiction d'attrition, en complément des modèles scikit-learn du notebook.
+
+### Architecture
+
+```
+Input (n_features)
+    → Linear(64) → BatchNorm1d → ReLU → Dropout(0.3)
+    → Linear(32) → BatchNorm1d → ReLU → Dropout(0.2)
+    → Linear(1)  → Sigmoid
+```
+
+Sortie : probabilité d'attrition entre 0 et 1.
+
+### Pipeline de données (nn_data.py)
+
+| Étape | Détail |
+|---|---|
+| Fusion | LEFT join sur `EmployeeID` (general + manager_survey + employee_survey) |
+| Indicateurs manquants | Colonnes `_missing` pour EnvironmentSatisfaction, JobSatisfaction, WorkLifeBalance |
+| Imputation | Médiane (numériques), mode (catégorielles) — avant le split |
+| Encodage | `LabelEncoder` sur toutes les colonnes objet |
+| Déséquilibre | SMOTE sur le train uniquement |
+| Normalisation | `StandardScaler` ajusté sur le train, appliqué sur les deux |
+
+### Entraînement
+
+```bash
+python nn_pytorch.py
+```
+
+Paramètres par défaut : 50 epochs, batch_size=64, lr=0.001, optimiseur Adam, perte BCE.
+
+Affiche toutes les 10 époques :
+
+```
+Epoch  10/50 | Train Loss: 0.4821 | Val Loss: 0.5103 | Val Acc: 76.32%
+```
+
+### Fichiers produits
+
+```
+model_pytorch.pth       ← poids du réseau (state_dict)
+scaler_nn.pkl           ← StandardScaler
+feature_names_nn.pkl    ← liste ordonnée des features
+input_dim.pt            ← dimension d'entrée (pour reconstruire le modèle)
+```
+
+### Prédiction sur un nouveau CSV
+
+```bash
+python nn_pytorch.py mon_fichier.csv
+```
+
+Charge automatiquement `model_pytorch.pth`, `scaler_nn.pkl` et `feature_names_nn.pkl`, puis affiche :
+
+```
+EmployeeID  Proba_Attrition  Risque
+      1042             82.4  🔴 Élevé
+       873             41.7  🟡 Modéré
+       215              9.1  🟢 Faible
+```
+
+Seuils : Élevé ≥ 60 %, Modéré ≥ 35 %, Faible < 35 %.
+
+### Dépendances
+
+```bash
+pip install torch pandas numpy scikit-learn imbalanced-learn joblib
 ```
