@@ -26,15 +26,7 @@ hr_attrition_app/
 
 ## Étape 1 — Copier les modèles
 
-Après avoir exécuté votre notebook, copiez les fichiers `.pkl` dans le dossier `models/` :
-
-```bash
-cp model_rf_final.pkl  hr_attrition_app/models/
-cp model_xgb_final.pkl hr_attrition_app/models/
-cp model_lr_final.pkl  hr_attrition_app/models/
-cp scaler_lr.pkl       hr_attrition_app/models/
-cp feature_names.pkl   hr_attrition_app/models/
-```
+Copiez les fichiers `.pkl`
 
 ## Étape 2 — Lancer l'application
 
@@ -63,7 +55,7 @@ La colonne `Attrition` est optionnelle — si présente, la précision du modèl
 
 ---
 
-## Notebook — HumanForYou_ultimateSpiderMan_v3.ipynb
+## Notebook — HumanForYou.ipynb
 
 Le notebook couvre l'intégralité du pipeline ML ayant produit les modèles utilisés par l'application.
 
@@ -89,7 +81,7 @@ manager_survey_data.csv
 employee_survey_data.csv
 in_out_time/
     in_time.csv
-    out_time.csv        ← optionnel (features horaires)
+    out_time.csv      
 ```
 
 ### Modèles produits
